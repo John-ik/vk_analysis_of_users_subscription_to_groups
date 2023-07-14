@@ -2,7 +2,7 @@ from mysql.connector import connect, Error
 
 
 class NumberOfUsersInGroup(object):
-    """Данный класс при вызове очищает базу данных"""
+    """Данный класс при вызове показывает количество подписчиков выбранной группы"""
 
     def __init__(self, group_id, host, user, password, database):
         self.group_id = group_id
@@ -20,13 +20,13 @@ class NumberOfUsersInGroup(object):
                     password=self.password,
                     database=self.database
             ) as connection:
-                query = f"SELECT count(id) FROM {self.group_id}"
+                count_query = f"SELECT count(id) FROM {self.group_id}"
+                group_name_query = f"SELECT group_name FROM vk_ids WHERE group_id = '{self.group_id}'"
                 with connection.cursor() as cursor:
-                    cursor.execute(query)
+                    cursor.execute(count_query)
                     number_of_users = cursor.fetchone()[0]
-                    print(f"Количество подписчиков {self.group_id}: {number_of_users}")
+                    cursor.execute(group_name_query)
+                    group_name = cursor.fetchone()[0]
+                    print(f"Количество подписчиков {group_name}: {number_of_users}")
         except Error as e:
             print(e)
-
-# if __name__ == "__main__":
-#     NumberOfUsersInGroup("localhost", "ifan", "", "vk_parse_db")
