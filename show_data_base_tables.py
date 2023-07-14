@@ -9,9 +9,9 @@ class ShowDataBaseTables(object):
         self.user = user
         self.password = password
         self.database = database
-        self.clear_data_base()
+        self.show_data_base_tables()
 
-    def clear_data_base(self):
+    def show_data_base_tables(self):
         try:
             with connect(
                     host=self.host,
@@ -19,15 +19,12 @@ class ShowDataBaseTables(object):
                     password=self.password,
                     database=self.database
             ) as connection:
-                query = "SHOW TABLES"
+                query = "SELECT group_name, group_id FROM vk_ids"
                 with connection.cursor() as cursor:
                     cursor.execute(query)
-                    tables = cursor.fetchall()
-                    print("Таблицы в базе:")
-                for table in tables:
-                    print(table[0])
+                    groups = cursor.fetchall()
+                    print("Группы в базе ('имя', 'id'):")
+                    for group in groups:
+                        print(f"'{group[0]}'", '', f"'{group[1]}'")
         except Error as e:
             print(e)
-
-# if __name__ == "__main__":
-#     Show_Data_Base_Tables("localhost", "ifan", "", "vk_parse_db")
