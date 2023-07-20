@@ -215,3 +215,28 @@ class ClearDataBase(object):
                 print("Таблицы успешно удалены.")
         except Error as e:
             print(e)
+
+class SearchGroupIdInVk(object):
+    """Данный класс будет производить поиск группы по её имени"""
+
+    def __init__(self, token, searching_group_name):
+        self.__token = token
+        self.session = vk_api.VkApi(token=self.token)
+        self.searching_group_name = searching_group_name
+        self.group_id = None
+        self.search_id()
+
+    def search_id(self):
+        offset = 0
+        while self.group_id == None or offset < 10000:
+            groups = self.session.method("groups.search", {"q":self.searching_group_name, "offset": offset, "count": 1000})["items"]
+            for group in groups:
+                if self.searching_group_name == group["name"]:
+                    self.group_id = group["screen_name"]
+            offset += 1000
+            print(offset)
+            time.sleep(0.3)
+        if self.group_id != None:
+            print("Группа найдена")
+        else:
+            print("Проверьте верность введёного названия")
