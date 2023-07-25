@@ -277,3 +277,32 @@ class SearchGroupIdInVk(object):
             print("Группа найдена")
         else:
             print("Проверьте верность введёного названия")
+
+
+class MyQueryExecute(object):
+    """Данный класс отправляет введённый пользователем запрос"""
+
+    def __init__(self, query, host, user, password, database):
+        self.query = query
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.query_execute()
+
+    def query_execute(self):
+        try:
+            with connect(
+                    host=self.host,
+                    user=self.user,
+                    password=self.password,
+                    database=self.database
+            ) as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(self.query)
+                    all_data = cursor.fetchall()
+                    for data in all_data:
+                        print(data)
+                    print(all_data)
+        except Error as e:
+            print(e)
