@@ -181,13 +181,48 @@ class ShowDataBaseTables(object):
                     password=self.password,
                     database=self.database
             ) as connection:
-                query = "SELECT group_name, group_id FROM vk_ids"
+                query_show_tables = "SHOW TABLES"
+                query_vk_ids = "SELECT group_name, group_id FROM vk_ids"
+                with connection.cursor() as cursor:
+                    cursor.execute(query_show_tables)
+                    if cursor.fetchall() != []:
+                        cursor.execute(query_vk_ids)
+                        self.groups = cursor.fetchall()
+                        print("Группы в базе ('имя', 'id'):")
+                        for group in self.groups:
+                            print(f"'{group[0]}'", '', f"'{group[1]}'")
+                    else:
+                        print("База пуста")
+        except Error as e:
+            print(e)
+
+class ShowDataBaseTable(object):
+    """Данный класс показывает все строки выбранной таблицы"""
+
+    def __init__(self, group_id, host, user, password, database):
+        self.table_name = group_id
+        self.table = None
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.show_data_base_table()
+
+    def show_data_base_table(self):
+        try:
+            with connect(
+                    host=self.host,
+                    user=self.user,
+                    password=self.password,
+                    database=self.database
+            ) as connection:
+                query = f"SELECT * FROM {self.table_name}"
                 with connection.cursor() as cursor:
                     cursor.execute(query)
-                    self.groups = cursor.fetchall()
-                    print("Группы в базе ('имя', 'id'):")
-                    for group in self.groups:
-                        print(f"'{group[0]}'", '', f"'{group[1]}'")
+                    self.table = cursor.fetchall()
+                    for string in self.table:
+                        print(string)
+
         except Error as e:
             print(e)
 
@@ -284,23 +319,24 @@ class ClearDataBase(object):
                     query = f"DROP TABLE {table[0]}"
                     with connection.cursor() as cursor:
                         cursor.execute(query)
-                print("Таблицы успешно удалены.")
+                print("Таблицы успешно удалены")
         except Error as e:
             print(e)
+
 
 class SearchGroupIdInVk(object):
     """Данный класс будет производить поиск группы по её имени"""
 
-    def __init__(self, token, searching_group_name):
+    def __init__(self, searching_group_name, token):
         self.__token = token
-        self.session = vk_api.VkApi(token=self.token)
+        self.session = vk_api.VkApi(token=self.__token)
         self.searching_group_name = searching_group_name
         self.group_id = None
         self.search_id()
 
     def search_id(self):
         offset = 0
-        while self.group_id == None or offset < 10000:
+        while self.group_id == None and offset < 10000:
             groups = self.session.method("groups.search", {"q":self.searching_group_name, "offset": offset, "count": 1000})["items"]
             for group in groups:
                 if self.searching_group_name == group["name"]:
@@ -309,7 +345,7 @@ class SearchGroupIdInVk(object):
             print(offset)
             time.sleep(0.3)
         if self.group_id != None:
-            print("Группа найдена")
+            print(f"ID {self.searching_group_name}: {self.group_id}")
         else:
             print("Проверьте верность введёного названия")
 
@@ -341,3 +377,4 @@ class MyQueryExecute(object):
                     print(all_data)
         except Error as e:
             print(e)
+
