@@ -13,15 +13,18 @@ class SaveGroupUsers(object):
         self.db_conn_info = {"host": host, "user": user, "password": password, "database": database}
         self.id_currect = True
         self.check_id_currect()
-        print("Все участники группы сохранены.")
 
     def check_id_currect(self):
         try:
             self.session.method("groups.getById", {"group_id": self.group_id})
             self.connecting_to_data_base()
-        except:
+            print("Все участники группы сохранены")
+        except Error as e:
             self.id_currect = False
-            print("Введён неверный id группы.")
+            if e:
+                print(e)
+            else:
+                print("Введён неверный id группы")
 
     def connecting_to_data_base(self):
         with connect(
@@ -76,8 +79,10 @@ class SaveGroupUsers(object):
         create_table_query = """
                 CREATE TABLE """ + self.group_id + """(
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT,
-                group_id VARCHAR(100)
+                user_id VARCHAR(100),
+                user_name VARCHAR(100),
+                birthday  VARCHAR(100),
+                university VARCHAR(100)
                 )
                 """
         self.group_name = self.session.method("groups.getById", {"group_id": self.group_id})[0]["name"]
@@ -102,28 +107,60 @@ class SaveGroupUsers(object):
 
     def get_group_members(self, start_from, connection):
         members_count = self.session.method("groups.getMembers", {"group_id": self.group_id})["count"]
-        print("Приступаем к сохранению участников группы.")
+        print(members_count)
+        print("Приступаем к сохранению участников группы")
         for offset in range(start_from, members_count, 1000):
             self.members = self.session.method("groups.getMembers",
                                                {"group_id": self.group_id,
-                                                "count": 1000, "offset": offset}
+                                                "count": 1000,
+                                                "offset": offset,
+                                                "fields": "bdate, universities"}
                                                )["items"]
-            print(self.members)  # показывает список, который вноситься в данный момент
             self.save_members_to_db(connection)
+            print("Участников сохранено: " + str(offset))
 
     def save_members_to_db(self, connection):
-        user_group_dict = []
-        for user_id in self.members:
-            user_group_dict.append([user_id, self.group_id])
+        users_list = []
+        for user in self.members:
+            user_list = []
+            user_list.append(user["id"])
+            user_first_last_name = user["first_name"] + user["last_name"]
+            if self.symbol_searching(user_first_last_name) and len(user_first_last_name) < 100:
+                user_list.append(user_first_last_name)
+            else:
+                user_list.append("name not defined")
+            if "bdate" in user:
+                if len(user["bdate"]) > 7:
+                    user_list.append(user["bdate"])
+                else:
+                    user_list.append("empty")
+            else:
+                user_list.append("empty")
+            if "universities" in user:
+                if len(user["universities"]) > 0:
+                    if self.symbol_searching(user["universities"][0]["name"]) and len(user["universities"][0]["name"]) < 100:
+                        user_list.append(user["universities"][0]["name"])
+                    else:
+                        user_list.append("empty")
+                else:
+                    user_list.append("empty")
+            else:
+                user_list.append("empty")
+            users_list.append(user_list)
+
         query = """
                 INSERT INTO """ + self.group_id + """
-                (user_id, group_id)
-                VALUES (%s, %s)
+                (user_id, user_name, birthday, university)
+                VALUES (%s, %s, %s, %s)
                 """
         with connection.cursor() as cursor:
-            cursor.executemany(query, user_group_dict)
+            cursor.executemany(query, users_list)
             connection.commit()
         time.sleep(0.3)
+
+    def symbol_searching(self, string): # Проверка на отсутствие лишних букв
+        return all([i in r"abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ" \
+                  "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ01234567890!@#$%^&*()-=_+~`|/[]{},.<>;:' " for i in string])
 
 
 class ShowDataBaseTables(object):
