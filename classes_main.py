@@ -223,6 +223,41 @@ class NumberOfUsersInGroup(object):
             print(e)
 
 
+class DeleteGroupFromBase(object):
+    """Данный класс при вызове очищает базу данных"""
+
+    def __init__(self, group_id, host, user, password, database):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.group_id = group_id
+        self.group_name = None
+        self.delete_group_from_base()
+
+    def delete_group_from_base(self):
+        try:
+            with connect(
+                    host=self.host,
+                    user=self.user,
+                    password=self.password,
+                    database=self.database
+            ) as connection:
+                group_name_query = f"SELECT group_name FROM vk_ids WHERE group_id = '{self.group_id}'"
+                with connection.cursor() as cursor:
+                    cursor.execute(group_name_query)
+                    self.group_name = cursor.fetchall()[0]
+                delete_table_query = f"DROP TABLE {self.group_id}"
+                delete_from_vk_ids = f"DELETE FROM vk_ids WHERE group_id = '{self.group_id}'"
+                with connection.cursor() as cursor:
+                    cursor.execute(delete_table_query)
+                    cursor.execute(delete_from_vk_ids)
+                    connection.commit()
+                print(f"Группа {self.group_name} удалена.")
+        except Error as e:
+            print(e)
+
+
 class ClearDataBase(object):
     """Данный класс при вызове очищает базу данных"""
 
