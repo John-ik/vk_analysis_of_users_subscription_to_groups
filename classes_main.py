@@ -378,3 +378,52 @@ class MyQueryExecute(object):
         except Error as e:
             print(e)
 
+
+class SearchForIntersections(object):
+    """Данный класс производит поиск пересечений по нескольким таблицам"""
+
+    def __init__(self, groups_list, host, user, password, database):
+        self.groups_list = groups_list
+        self.columns = []
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.connect_to_db()
+
+    def connect_to_db(self):
+        try:
+            with connect(
+                    host=self.host,
+                    user=self.user,
+                    password=self.password,
+                    database=self.database
+            ) as connection:
+                self.select_columns(connection)
+        except Error as e:
+            print(e)
+
+    def select_columns(self, connection):
+        select_columns_query = f"SHOW COLUMNS FROM {self.groups_list[0]}"
+        with connection.cursor() as cursor:
+            cursor.execute(select_columns_query)
+            self.columns = cursor.fetchall()
+        self.search_for_intersections(connection)
+
+    def search_for_intersections(self, connection):
+        search_query = ""
+        for group_index in range(len(self.groups_list)):
+            search_query += "SELECT "
+            for column_index in range(len(self.columns)):
+                if column_index != len(self.columns) - 1 and self.columns[column_index][0] != "id":
+                    search_query += self.columns[column_index][0] + ", "
+                elif self.columns[column_index][0] != "id":
+                    search_query += self.columns[column_index][0] + " "
+            search_query += f"FROM {self.groups_list[group_index]} "
+            if group_index != len(self.groups_list) - 1:
+                search_query += "INTERSECT "
+        with connection.cursor() as cursor:
+            cursor.execute(search_query)
+            search_data_list = cursor.fetchall()
+            for search_data in search_data_list:
+                print(search_data)
