@@ -3,6 +3,7 @@ import vk_api
 import time
 
 
+
 class SaveGroupUsers(object):
     """Здесь я реалезую работу с vk api через свой класс"""
 
@@ -117,14 +118,14 @@ class SaveGroupUsers(object):
                                                 "fields": "bdate, universities"}
                                                )["items"]
             self.save_members_to_db(connection)
-            print("Участников сохранено: " + str(offset))
+            print("Участников сохранено: " + str(offset + len(self.members)))
 
     def save_members_to_db(self, connection):
         users_list = []
         for user in self.members:
             user_list = []
             user_list.append(user["id"])
-            user_first_last_name = user["first_name"] + user["last_name"]
+            user_first_last_name = user["first_name"] + " " +user["last_name"]
             if self.symbol_searching(user_first_last_name) and len(user_first_last_name) < 100:
                 user_list.append(user_first_last_name)
             else:
@@ -156,7 +157,7 @@ class SaveGroupUsers(object):
         with connection.cursor() as cursor:
             cursor.executemany(query, users_list)
             connection.commit()
-        time.sleep(0.3)
+        time.sleep(0.4)
 
     def symbol_searching(self, string): # Проверка на отсутствие лишних букв
         return all([i in r"abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ" \
@@ -191,8 +192,21 @@ class ShowDataBaseTables(object):
                         print("Группы в базе ('имя', 'id'):")
                         for group in self.groups:
                             print(f"'{group[0]}'", '', f"'{group[1]}'")
+                        query_show_columns = f"SHOW COLUMNS FROM {self.groups[0][1]}"
+                        cursor.execute(query_show_columns)
+                        columns = cursor.fetchall()
+                        print()
+                        print("Столбцы таблиц:")
+                        print(end="| ")
+                        for column in columns:
+                            if columns.index(column) == len(columns) - 1:
+                                print(column[0] + " |")
+                            else:
+                                print(column[0], end=' | ')
+
                     else:
                         print("База пуста")
+
         except Error as e:
             print(e)
 
@@ -281,13 +295,14 @@ class DeleteGroupFromBase(object):
                 group_name_query = f"SELECT group_name FROM vk_ids WHERE group_id = '{self.group_id}'"
                 with connection.cursor() as cursor:
                     cursor.execute(group_name_query)
-                    self.group_name = cursor.fetchall()[0]
+                    self.group_name = cursor.fetchall()[0][0]
                 delete_table_query = f"DROP TABLE {self.group_id}"
                 delete_from_vk_ids = f"DELETE FROM vk_ids WHERE group_id = '{self.group_id}'"
                 with connection.cursor() as cursor:
                     cursor.execute(delete_table_query)
                     cursor.execute(delete_from_vk_ids)
                     connection.commit()
+                connection.commit()
                 print(f"Группа {self.group_name} удалена.")
         except Error as e:
             print(e)
@@ -337,7 +352,8 @@ class SearchGroupIdInVk(object):
     def search_id(self):
         offset = 0
         while self.group_id == None and offset < 10000:
-            groups = self.session.method("groups.search", {"q":self.searching_group_name, "offset": offset, "count": 1000})["items"]
+            groups = self.session.method("groups.search",
+                                         {"q":self.searching_group_name, "offset": offset, "count": 1000})["items"]
             for group in groups:
                 if self.searching_group_name == group["name"]:
                     self.group_id = group["screen_name"]
@@ -377,7 +393,6 @@ class MyQueryExecute(object):
                     print(all_data)
         except Error as e:
             print(e)
-
 
 class SearchForIntersections(object):
     """Данный класс производит поиск пересечений по нескольким таблицам"""
