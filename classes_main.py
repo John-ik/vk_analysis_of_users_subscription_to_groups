@@ -28,13 +28,13 @@ class SaveGroupUsers(object):
                 print("Введён неверный id группы")
 
     def connecting_to_data_base(self):
-        with connect(
-                host=self.db_conn_info["host"],
-                user=self.db_conn_info["user"],
-                password=self.db_conn_info["password"],
-                database=self.db_conn_info["database"]
-        ) as connection:
-            self.check_vk_ids_table(connection)
+        connection = connect(
+            host=self.db_conn_info["host"],
+            user=self.db_conn_info["user"],
+            password=self.db_conn_info["password"],
+            database=self.db_conn_info["database"]
+        )
+        self.check_vk_ids_table(connection)
 
     def check_vk_ids_table(self, connection):
         query = """
