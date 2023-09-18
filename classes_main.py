@@ -26,7 +26,7 @@ class SaveGroupUsers(object):
             else:
                 print("Введён неверный id группы")
 
-    def connecting_to_data_base(self):
+    def connecting_to_data_base(self):  # Подключаемся к mysql
         with connect(
                 host=self.db_conn_info["host"],
                 user=self.db_conn_info["user"],
