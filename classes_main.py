@@ -3,11 +3,10 @@ import vk_api
 import time
 
 
-
 class SaveGroupUsers(object):
-    """Здесь я реалезую работу с vk api через свой класс"""
+    """Данный класс сохраняет участников выбранной группы ВК в таблицу MySQL"""
 
-    def __init__(self, group_id, token, host, user, password, database):
+    def __init__(self, group_id, token, host, user, password, database):  # Принимаем айди группы и данные mysql сервера
         self.__token = token
         self.session = vk_api.VkApi(token=self.__token)
         self.group_id = group_id
@@ -15,7 +14,7 @@ class SaveGroupUsers(object):
         self.id_currect = True
         self.check_id_currect()
 
-    def check_id_currect(self):
+    def check_id_currect(self):  # Проверяем на существование введёный айди грппы
         try:
             self.session.method("groups.getById", {"group_id": self.group_id})
             self.connecting_to_data_base()
@@ -27,7 +26,7 @@ class SaveGroupUsers(object):
             else:
                 print("Введён неверный id группы")
 
-    def connecting_to_data_base(self):
+    def connecting_to_data_base(self):  # Подключаемся к mysql
         with connect(
                 host=self.db_conn_info["host"],
                 user=self.db_conn_info["user"],
@@ -36,7 +35,7 @@ class SaveGroupUsers(object):
         ) as connection:
             self.check_vk_ids_table(connection)
 
-    def check_vk_ids_table(self, connection):
+    def check_vk_ids_table(self, connection):  # Проверяем, есть ли уже таблица для имён групп
         query = """
                 SHOW TABLES
                 """
@@ -54,7 +53,7 @@ class SaveGroupUsers(object):
         else:
             self.make_vk_ids_table(connection)
 
-    def make_vk_ids_table(self, connection):
+    def make_vk_ids_table(self, connection):  # Таблицы для имён нет, создаём новую
         query = """
                 CREATE TABLE vk_ids(
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -66,7 +65,7 @@ class SaveGroupUsers(object):
             cursor.execute(query)
         self.check_group_table(connection)
 
-    def check_group_table(self, connection):
+    def check_group_table(self, connection):  # Проверяем, есть ли у нас уже эта группа и полная ли она
         table_in_base = False
         for table in self.tables:
             if table[0] == self.group_id:
@@ -76,7 +75,7 @@ class SaveGroupUsers(object):
         else:
             self.create_table_for_group(connection)
 
-    def create_table_for_group(self, connection):
+    def create_table_for_group(self, connection):  # Данной группы в базе нет, значить создаём для неё новую таблицу
         create_table_query = """
                 CREATE TABLE """ + self.group_id + """(
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -97,7 +96,7 @@ class SaveGroupUsers(object):
 
         self.get_group_members(0, connection)
 
-    def append_table(self, connection):
+    def append_table(self, connection):  # Группа уже есть, но неполная, значить начнём заполнение с последней точки
         query = """
                 SELECT COUNT(*) FROM """ + self.group_id + """
                 """
@@ -106,7 +105,7 @@ class SaveGroupUsers(object):
             count = cursor.fetchone()[0]
         self.get_group_members(count, connection)
 
-    def get_group_members(self, start_from, connection):
+    def get_group_members(self, start_from, connection):  # Получаем по 1000 участников из группы
         members_count = self.session.method("groups.getMembers", {"group_id": self.group_id})["count"]
         print(members_count)
         print("Приступаем к сохранению участников группы")
@@ -120,13 +119,13 @@ class SaveGroupUsers(object):
             self.save_members_to_db(connection)
             print("Участников сохранено: " + str(offset + len(self.members)))
 
-    def save_members_to_db(self, connection):
+    def save_members_to_db(self, connection):  # Сохраняем полученных участников в таблицу  mysql
         users_list = []
         for user in self.members:
             user_list = []
             user_list.append(user["id"])
-            user_first_last_name = user["first_name"] + " " +user["last_name"]
-            if self.symbol_searching(user_first_last_name) and len(user_first_last_name) < 100:
+            user_first_last_name = user["first_name"] + " " + user["last_name"]
+            if self.symbol_searching(user_first_last_name) and len(user_first_last_name) < 100:  # Смотрим, чтобы не попались лишние символы
                 user_list.append(user_first_last_name)
             else:
                 user_list.append("name not defined")
@@ -139,7 +138,7 @@ class SaveGroupUsers(object):
                 user_list.append("empty")
             if "universities" in user:
                 if len(user["universities"]) > 0:
-                    if self.symbol_searching(user["universities"][0]["name"]) and len(user["universities"][0]["name"]) < 100:
+                    if self.symbol_searching(user["universities"][0]["name"]) and len(user["universities"][0]["name"]) < 100:  # # Смотрим, чтобы не попались лишние символы
                         user_list.append(user["universities"][0]["name"])
                     else:
                         user_list.append("empty")
@@ -157,7 +156,7 @@ class SaveGroupUsers(object):
         with connection.cursor() as cursor:
             cursor.executemany(query, users_list)
             connection.commit()
-        time.sleep(0.4)
+        time.sleep(0.4)  # Ждём, чтобы ВК нас не забанил
 
     def symbol_searching(self, string): # Проверка на отсутствие лишних букв
         return all([i in r"abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ" \
@@ -203,7 +202,6 @@ class ShowDataBaseTables(object):
                                 print(column[0] + " |")
                             else:
                                 print(column[0], end=' | ')
-
                     else:
                         print("База пуста")
 
@@ -400,6 +398,7 @@ class SearchForIntersections(object):
     def __init__(self, groups_list, host, user, password, database):
         self.groups_list = groups_list
         self.columns = []
+        self.users = []
         self.host = host
         self.user = user
         self.password = password
@@ -439,6 +438,6 @@ class SearchForIntersections(object):
                 search_query += "INTERSECT "
         with connection.cursor() as cursor:
             cursor.execute(search_query)
-            search_data_list = cursor.fetchall()
-            for search_data in search_data_list:
-                print(search_data)
+            self.users = cursor.fetchall()
+            for user in self.users:
+                print(user)
