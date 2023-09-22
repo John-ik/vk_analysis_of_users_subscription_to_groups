@@ -1,53 +1,6 @@
-from mysql.connector import connect, Error
+from mysql.connector import connect as db_connect, Error
 import vk_api
 import time
-
-class DBCursorContext:
-    def __init__(self, db_connection):
-        self.cursor = db_connection.cursor()
-
-    def __enter__(self):
-        return self.cursor
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cursor.close()
-
-class DBConnection:
-    def __init__(self, host, user, password, database):
-        self.host = host
-        self.user = user
-        self.password = password
-        self.database = database
-        self.conn = db_connect(
-                    host=self.host,
-                    user=self.user,
-                    password=self.password,
-                    database=self.database
-                    )
-
-    def cursor(self):
-        return DBCursorContext(self.conn)
-    
-    def close(self):
-        self.conn.close()
-
-
-class DBConnectionContext:
-    def __init__(self, host, user, password, database) -> None:
-        self.host = host
-        self.user = user
-        self.password = password
-        self.database = database
-
-    def __enter__(self):
-        self.conn = DBConnection(self.host, self.user, self.password, self.database)
-        return self.conn;
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.conn.close()
-
-def connect(host, user, password, database):
-    return DBConnectionContext(host, user, password, database)
 
 
 class SaveGroupUsers(object):
@@ -172,7 +125,8 @@ class SaveGroupUsers(object):
             user_list = []
             user_list.append(user["id"])
             user_first_last_name = user["first_name"] + " " + user["last_name"]
-            if self.symbol_searching(user_first_last_name) and len(user_first_last_name) < 100:  # Смотрим, чтобы не попались лишние символы
+            if self.symbol_searching(user_first_last_name) and len(
+                    user_first_last_name) < 100:  # Смотрим, чтобы не попались лишние символы
                 user_list.append(user_first_last_name)
             else:
                 user_list.append("name not defined")
@@ -185,7 +139,8 @@ class SaveGroupUsers(object):
                 user_list.append("empty")
             if "universities" in user:
                 if len(user["universities"]) > 0:
-                    if self.symbol_searching(user["universities"][0]["name"]) and len(user["universities"][0]["name"]) < 100:  # # Смотрим, чтобы не попались лишние символы
+                    if self.symbol_searching(user["universities"][0]["name"]) and len(
+                            user["universities"][0]["name"]) < 100:  # # Смотрим, чтобы не попались лишние символы
                         user_list.append(user["universities"][0]["name"])
                     else:
                         user_list.append("empty")
@@ -205,8 +160,9 @@ class SaveGroupUsers(object):
             connection.commit()
         time.sleep(0.4)  # Ждём, чтобы ВК нас не забанил
 
-    def symbol_searching(self, string): # Проверка на отсутствие лишних букв
-        return all([i in r"abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ" \
+    def symbol_searching(self, string):  # Проверка на отсутствие лишних букв
+        return all(
+            [i in r"abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZабвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ" \
                   "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ01234567890!@#$%^&*()-=_+~`|/[]{},.<>;:' " for i in string])
 
 
@@ -254,6 +210,7 @@ class ShowDataBaseTables(object):
 
         except Error as e:
             print(e)
+
 
 class ShowDataBaseTable(object):
     """Данный класс показывает все строки выбранной таблицы"""
@@ -346,8 +303,6 @@ class DeleteGroupFromBase(object):
                 with connection.cursor() as cursor:
                     cursor.execute(delete_table_query)
                     cursor.execute(delete_from_vk_ids)
-                    connection.commit()
-                connection.commit()
                 print(f"Группа {self.group_name} удалена.")
         except Error as e:
             print(e)
@@ -398,7 +353,7 @@ class SearchGroupIdInVk(object):
         offset = 0
         while self.group_id == None and offset < 10000:
             groups = self.session.method("groups.search",
-                                         {"q":self.searching_group_name, "offset": offset, "count": 1000})["items"]
+                                         {"q": self.searching_group_name, "offset": offset, "count": 1000})["items"]
             for group in groups:
                 if self.searching_group_name == group["name"]:
                     self.group_id = group["screen_name"]
@@ -438,6 +393,7 @@ class MyQueryExecute(object):
                     print(all_data)
         except Error as e:
             print(e)
+
 
 class SearchForIntersections(object):
     """Данный класс производит поиск пересечений по нескольким таблицам"""
@@ -488,3 +444,58 @@ class SearchForIntersections(object):
             self.users = cursor.fetchall()
             for user in self.users:
                 print(user)
+
+
+# Классы ниже нужны для тех у кого не работает контекст (не закрывается подклбчение к ДБ с помощью with)
+# Они по умолчинию включены
+# Для отключения уберите в импорте "as db_connect" и уберите классы ниже
+
+class DBCursorContext:
+    def __init__(self, db_connection):
+        self.cursor = db_connection.cursor()
+
+    def __enter__(self):
+        return self.cursor
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cursor.close()
+
+
+class DBConnection:
+    def __init__(self, host, user, password, database):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.conn = db_connect(
+            host=self.host,
+            user=self.user,
+            password=self.password,
+            database=self.database
+        )
+
+    def cursor(self):
+        return DBCursorContext(self.conn)
+
+    def close(self):
+        self.conn.close()
+
+
+class DBConnectionContext:
+    def __init__(self, host, user, password, database) -> None:
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+
+    def __enter__(self):
+        self.conn = DBConnection(self.host, self.user, self.password, self.database)
+        return self.conn
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.conn.close()
+
+
+def connect(host, user, password, database):
+    return DBConnectionContext(host, user, password, database)
+
