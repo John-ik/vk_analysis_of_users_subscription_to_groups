@@ -1,6 +1,6 @@
 from telebot import TeleBot, types
-from local_vk_parse_project.config import vk_token, bot_token, host, user, password, database
-from local_vk_parse_project.classes_main import *
+from config import vk_token, bot_token, host, user, password, database
+from classes_main import *
 
 
 def main():
