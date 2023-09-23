@@ -1,4 +1,4 @@
-from mysql.connector import connect, Error
+from mysql.connector import connect as db_connect, Error
 import vk_api
 import time
 
