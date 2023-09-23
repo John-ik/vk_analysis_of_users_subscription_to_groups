@@ -1,53 +1,43 @@
-from mysql.connector import connect as db_connect, Error
+from mysql.connector import connect, Error
 import vk_api
 import time
 
-class DBCursorContext:
-    def __init__(self, db_connection):
-        self.cursor = db_connection.cursor()
+# class DBCursorContext (MySQLCursor):
+#     def __init__(self, db_connection):
+#         super(db_connection)
 
-    def __enter__(self):
-        return self.cursor
+#     def __enter__(self):
+#         return super()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cursor.close()
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         super().close()
 
-class DBConnection:
-    def __init__(self, host, user, password, database):
-        self.host = host
-        self.user = user
-        self.password = password
-        self.database = database
-        self.conn = db_connect(
-                    host=self.host,
-                    user=self.user,
-                    password=self.password,
-                    database=self.database
-                    )
+# class DBConnection (MySQLConnection):
+#     def __init__(self, host, user, password, database):
+#         super().__init__(host=host, user=user, password=password, database=database)
 
-    def cursor(self):
-        return DBCursorContext(self.conn)
+#     def cursor(self):
+#         return DBCursorContext(super().connect())
     
-    def close(self):
-        self.conn.close()
+#     def close(self):
+#         super().close()
 
+# class DBConnectionContext:
+#     def __init__(self, host, user, password, database) -> None:
+#         self.host = host
+#         self.user = user
+#         self.password = password
+#         self.database = database
 
-class DBConnectionContext:
-    def __init__(self, host, user, password, database) -> None:
-        self.host = host
-        self.user = user
-        self.password = password
-        self.database = database
-
-    def __enter__(self):
-        self.conn = DBConnection(self.host, self.user, self.password, self.database)
-        return self.conn;
+#     def __enter__(self):
+#         self.conn = DBConnection(self.host, self.user, self.password, self.database)
+#         return self.conn;
     
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.conn.close()
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         self.conn.close()
 
-def connect(host, user, password, database):
-    return DBConnectionContext(host, user, password, database)
+# def connect(host, user, password, database):
+#     return DBConnectionContext(host, user, password, database)
 
 
 class SaveGroupUsers(object):
