@@ -1,6 +1,6 @@
 import flet as ft
-from local_vk_parse_project.config import host, user, password, database, vk_token
-from local_vk_parse_project.classes_main import *
+from config import host, user, password, database, vk_token
+from classes_main import *
 
 def groups_ft_table():
     sql_column = ShowDataBaseTables(host, user, password, database).groups
